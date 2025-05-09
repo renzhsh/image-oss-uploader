@@ -1,6 +1,6 @@
 {
 	"id": "image-oss-uploader",
-	"name": "Image OSS uploader",
+	"name": "Image OSS Uploader",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Upload local images to remote store (AliYun OSS, Minio).",

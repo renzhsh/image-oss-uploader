@@ -3,7 +3,7 @@ export interface AliyunOssSettings {
     bucket: string;
     accessKey: string;
     secretKey: string;
-    customDomain?: string;
+    targetPath?: string;
 }
 
 export const DEFAULT_SETTINGS: AliyunOssSettings = {
@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: AliyunOssSettings = {
     bucket: "",
     accessKey: "",
     secretKey: "",
-    customDomain: "",
+    targetPath: ""
 };
 
 

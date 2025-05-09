@@ -3,7 +3,7 @@ import { AliyunOssSettings, DEFAULT_SETTINGS } from "./settings";
 import OSS from "ali-oss";
 
 export class AliyunOssSettingTab extends PluginSettingTab {
-    plugin: AliyunOSSUploader;
+	plugin: AliyunOSSUploader;
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
@@ -51,7 +51,17 @@ export class AliyunOssSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
-		// 类似方式添加 bucket、accessKey、secretKey 设置
+		new Setting(containerEl)
+			.setName("Target Path")
+			.setDesc("the path to store image. Support {year} {month} {day} {timestamp} {filename} vars. For example, /{year}/{month}/{day}/{filename} with uploading pic.jpg, it will store as /2023/06/08/pic.jpg.")
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.targetPath)
+					.onChange(async (value) => {
+						this.plugin.settings.targetPath = value;
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 }
 
@@ -102,7 +112,17 @@ export default class AliyunOSSUploader extends Plugin {
 		});
 
 		try {
-			const fileName = `${Date.now()}_${file.name}`;
+			const date = new Date();
+			const template = this.settings.targetPath || '{filename}'
+			const filename = file.name
+
+			// Replace individual placeholders
+			const fileName = template
+				.replace(/\{year\}/g, `${date.getFullYear()}`)
+				.replace(/\{month\}/g, `${String(date.getMonth() + 1).padStart(2, '0')}`) // Month is 0-indexed
+				.replace(/\{day\}/g, `${String(date.getDate()).padStart(2, '0')}`)
+				.replace(/\{timestamp\}/g, `${Date.now()}`)
+				.replace(/\{filename\}/g, filename);
 			const result = await client.put(fileName, file);
 			return result.url;
 		} catch (error) {
