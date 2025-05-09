@@ -1,8 +1,6 @@
 # **Image OSS Uploader for Obsidian**
 🚀 **自动上传图片到阿里云 OSS** | 🔒 **安全存储** | ⚡ **无缝集成 Obsidian**
 
-![Obsidian Plugin Banner](https://img.alicdn.com/imgextra/i1/O1CN01JyRmKx1YKR4G2f8p0_!!6000000003050-2-tps-1200-630.png)
-
 ---
 
 ## **📖 简介**
@@ -22,7 +20,7 @@
 3. **启用插件** 并前往插件设置完成 **阿里云 OSS 配置**
 
 ### **方法 2：手动安装（开发版）**
-1. 从 [GitHub Releases](https://github.com/your-repo/image-oss-uploader/releases) 下载 `main.js` 和 `manifest.json`
+1. 从 [GitHub Releases](https://github.com/renzhsh/image-oss-uploader/releases) 下载 `main.js` 和 `manifest.json`
 2. 复制到 Obsidian 插件目录：`<你的Vault>/.obsidian/plugins/image-oss-uploader/`
 3. 重新加载 Obsidian 并启用插件
 
@@ -49,7 +47,7 @@
 - **Bucket 建议设为私有读**，避免公开访问（可配合 CDN 或 STS 临时令牌优化安全策略）。
 
 **配置界面示例**：
-![Plugin Settings Screenshot](https://img.alicdn.com/imgextra/i2/O1CN01XqZcXy1x8YxXt4z5G_!!6000000006411-2-tps-800-500.png)
+![Plugin Settings Screenshot](./docs/screenshot_2025-05-10_05-35-03.png)
 
 ---
 
@@ -98,7 +96,7 @@
 
 ## **📜 开源协议**
 MIT License | Copyright © 2023 [Your Name]
-代码仓库：[GitHub - Image OSS Uploader](https://github.com/your-repo/image-oss-uploader)
+代码仓库：[GitHub - Image OSS Uploader](https://github.com/renzhsh/image-oss-uploader)
 
 **欢迎贡献！** 🌟 提交 PR 或 Issue 反馈问题/建议。
 
