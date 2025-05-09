@@ -1,134 +1,160 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Plugin, Setting, PluginSettingTab, MarkdownView, Notice, DropdownComponent } from "obsidian";
+import { AliyunOssSettings, DEFAULT_SETTINGS } from "./settings";
+import OSS from "ali-oss";
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-	mySetting: string;
+export class AliyunOssSettingTab extends PluginSettingTab {
+	plugin: AliyunOSSUploader;
+	display(): void {
+		const { containerEl } = this;
+		containerEl.empty();
+		new Setting(containerEl)
+			.setName("Region")
+			.setDesc("OSS data center region, e.g. oss-cn-hangzhou")
+			.addDropdown((dropdown: DropdownComponent) => {
+				dropdown
+					.addOption("oss-cn-hangzhou", "华东1（杭州）")
+					.addOption("oss-cn-shanghai", "华东2（上海）")
+					.addOption("oss-cn-nanjing", "华东5（南京-本地地域）")
+					.addOption("oss-cn-qingdao", "华北1（青岛）")
+					.addOption("oss-cn-beijing", "华北2（北京）")
+					.setValue(this.plugin.settings.region || "oss-cn-hangzhou")   // 设置默认值
+					.onChange(async (value: string) => {
+						this.plugin.settings.region = value;          // 保存设置
+						await this.plugin.saveSettings();               // 持久化存储
+					});
+			});
+		new Setting(containerEl)
+			.setName("AccessKey ID")
+			.setDesc("The accessKey id of Aliyun OSS")
+			.addText((text) => {
+				text.inputEl.type = "password"
+				text
+					.setValue(this.plugin.settings.accessKey)
+					.onChange(async (value) => {
+						this.plugin.settings.accessKey = value;
+						await this.plugin.saveSettings();
+					})
+			});
+		new Setting(containerEl)
+			.setName("AccessKey Secret")
+			.setDesc("The accessKey secret of Aliyun OSS")
+			.addText((text) => {
+				text.inputEl.type = "password"
+				text
+					.setValue(this.plugin.settings.secretKey)
+					.onChange(async (value) => {
+						this.plugin.settings.secretKey = value;
+						await this.plugin.saveSettings();
+					})
+			});
+		new Setting(containerEl)
+			.setName("Bucket Name")
+			.setDesc("The bucket name of store images")
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.bucket)
+					.onChange(async (value) => {
+						this.plugin.settings.bucket = value;
+						await this.plugin.saveSettings();
+					})
+			);
+		new Setting(containerEl)
+			.setName("Target Path")
+			.setDesc("the path to store image. Support {year} {month} {day} {timestamp} {filename} vars. For example, /{year}/{month}/{day}/{filename} with uploading pic.jpg, it will store as /2023/06/08/pic.jpg.")
+			.addText((text) =>
+				text
+					.setValue(this.plugin.settings.targetPath)
+					.onChange(async (value) => {
+						this.plugin.settings.targetPath = value;
+						await this.plugin.saveSettings();
+					})
+			);
+	}
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class AliyunOSSUploader extends Plugin {
+	settings: AliyunOssSettings;
 
 	async onload() {
-		await this.loadSettings();
+		// 监听剪贴板粘贴事件（paste）
+		this.registerEvent(
+			this.app.workspace.on("editor-paste", (evt: ClipboardEvent) => {
+				if (!evt.clipboardData?.items) return;
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
+				// 检查是否是图片
+				for (const item of evt.clipboardData.items) {
+					if (item.type.startsWith("image/")) {
+						evt.preventDefault(); // 阻止默认粘贴
+						this.handleImageUpload(item.getAsFile()!);
 					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
 				}
-			}
-		});
+			})
+		);
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		// 监听拖拽事件（drop）
+		this.registerEvent(
+			this.app.workspace.on("editor-drop", (evt: DragEvent) => {
+				if (!evt.dataTransfer?.files) return;
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
+				for (const file of evt.dataTransfer.files) {
+					if (file.type.startsWith("image/")) {
+						evt.preventDefault();
+						this.handleImageUpload(file);
+					}
+				}
+			})
+		);
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		await this.loadSettings();
+		this.addSettingTab(new AliyunOssSettingTab(this.app, this));
+
 	}
 
-	onunload() {
+	async uploadToOSS(file: File): Promise<string | null> {
+		const client = new OSS({
+			region: this.settings.region,       // e.g. "oss-cn-hangzhou"
+			accessKeyId: this.settings.accessKey,
+			accessKeySecret: this.settings.secretKey,
+			bucket: this.settings.bucket,
+		});
 
+		try {
+			const date = new Date();
+			const template = this.settings.targetPath || '{filename}'
+			const filename = file.name
+
+			// Replace individual placeholders
+			const fileName = template
+				.replace(/\{year\}/g, `${date.getFullYear()}`)
+				.replace(/\{month\}/g, `${String(date.getMonth() + 1).padStart(2, '0')}`) // Month is 0-indexed
+				.replace(/\{day\}/g, `${String(date.getDate()).padStart(2, '0')}`)
+				.replace(/\{timestamp\}/g, `${Date.now()}`)
+				.replace(/\{filename\}/g, filename);
+			const result = await client.put(fileName, file);
+			return result.url;
+		} catch (error) {
+			console.error("OSS Upload Error:", error);
+			new Notice('图片上传失败，请检查配置项是否正确。');
+			return null;
+		}
 	}
 
+	async handleImageUpload(file: File) {
+		const ossUrl = await this.uploadToOSS(file);
+		if (!ossUrl) return;
+
+		// 替换当前光标位置的文本
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (activeView) {
+			activeView.editor.replaceSelection(`![](${ossUrl})`);
+		}
+	}
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
-
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
-}
