@@ -5,7 +5,7 @@
 	"minAppVersion": "0.15.0",
 	"description": "Upload local images to remote store (AliYun OSS, Minio).",
 	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
+	"authorUrl": "https://github.com/renzhsh",
 	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }

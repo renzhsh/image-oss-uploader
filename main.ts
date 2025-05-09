@@ -1,4 +1,4 @@
-import { Plugin, Setting, PluginSettingTab, MarkdownView, Notice } from "obsidian";
+import { Plugin, Setting, PluginSettingTab, MarkdownView, Notice, DropdownComponent } from "obsidian";
 import { AliyunOssSettings, DEFAULT_SETTINGS } from "./settings";
 import OSS from "ali-oss";
 
@@ -10,36 +10,43 @@ export class AliyunOssSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Region")
 			.setDesc("OSS data center region, e.g. oss-cn-hangzhou")
-			.addText((text) =>
-				text
-					.setValue(this.plugin.settings.region)
-					.onChange(async (value) => {
-						this.plugin.settings.region = value;
-						await this.plugin.saveSettings();
-					})
-			);
+			.addDropdown((dropdown: DropdownComponent) => {
+				dropdown
+					.addOption("oss-cn-hangzhou", "华东1（杭州）")
+					.addOption("oss-cn-shanghai", "华东2（上海）")
+					.addOption("oss-cn-nanjing", "华东5（南京-本地地域）")
+					.addOption("oss-cn-qingdao", "华北1（青岛）")
+					.addOption("oss-cn-beijing", "华北2（北京）")
+					.setValue(this.plugin.settings.region || "oss-cn-hangzhou")   // 设置默认值
+					.onChange(async (value: string) => {
+						this.plugin.settings.region = value;          // 保存设置
+						await this.plugin.saveSettings();               // 持久化存储
+					});
+			});
 		new Setting(containerEl)
 			.setName("AccessKey ID")
 			.setDesc("The accessKey id of Aliyun OSS")
-			.addText((text) =>
+			.addText((text) => {
+				text.inputEl.type = "password"
 				text
 					.setValue(this.plugin.settings.accessKey)
 					.onChange(async (value) => {
 						this.plugin.settings.accessKey = value;
 						await this.plugin.saveSettings();
 					})
-			);
+			});
 		new Setting(containerEl)
 			.setName("AccessKey Secret")
 			.setDesc("The accessKey secret of Aliyun OSS")
-			.addText((text) =>
+			.addText((text) => {
+				text.inputEl.type = "password"
 				text
 					.setValue(this.plugin.settings.secretKey)
 					.onChange(async (value) => {
 						this.plugin.settings.secretKey = value;
 						await this.plugin.saveSettings();
 					})
-			);
+			});
 		new Setting(containerEl)
 			.setName("Bucket Name")
 			.setDesc("The bucket name of store images")
@@ -127,7 +134,7 @@ export default class AliyunOSSUploader extends Plugin {
 			return result.url;
 		} catch (error) {
 			console.error("OSS Upload Error:", error);
-			new Notice('图片上传失败，请检查配置项是否正确。' + error.message);
+			new Notice('图片上传失败，请检查配置项是否正确。');
 			return null;
 		}
 	}
