@@ -1,9 +1,9 @@
 {
-	"id": "obsidian-oss-uploader",
-	"name": "Obsidian OSS uploader",
+	"id": "image-oss-uploader",
+	"name": "Image OSS uploader",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Upload local images to remote store (AliYun OSS, Imagekit, Amazon S3, TencentCloud COS).",
+	"description": "Upload local images to remote store (AliYun OSS, Minio).",
 	"author": "Obsidian",
 	"authorUrl": "https://obsidian.md",
 	"fundingUrl": "https://obsidian.md/pricing",
