@@ -1,4 +1,4 @@
-import { Plugin, Setting, PluginSettingTab, MarkdownView } from "obsidian";
+import { Plugin, Setting, PluginSettingTab, MarkdownView, Notice } from "obsidian";
 import { AliyunOssSettings, DEFAULT_SETTINGS } from "./settings";
 import OSS from "ali-oss";
 
@@ -127,6 +127,7 @@ export default class AliyunOSSUploader extends Plugin {
 			return result.url;
 		} catch (error) {
 			console.error("OSS Upload Error:", error);
+			new Notice('图片上传失败，请检查配置项是否正确。' + error.message);
 			return null;
 		}
 	}
